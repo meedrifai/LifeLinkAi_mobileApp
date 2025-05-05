@@ -54,3 +54,5 @@ flutter:
 
   assets:
     - assets/
+    - assets/underline.png
+    - assets/HomePagePic.png
