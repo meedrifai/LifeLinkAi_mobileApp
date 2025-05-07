@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:lifelinkai/models/donor.dart';
 import 'dart:convert';
 import 'package:lifelinkai/models/user.dart';
 import 'package:lifelinkai/models/donation.dart';
@@ -94,5 +95,48 @@ class ApiService {
     }
   }
 
+  // Get all donors
+  static Future<List<Donor>> fetchDonors() async {
+    final response = await http.get(Uri.parse('$_baseUrl/donors'));
 
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => Donor.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load donors');
+    }
+  }
+
+  // Make prediction for donors
+  static Future<List<int>> predictDonors(
+    List<Map<String, dynamic>> features,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/predict'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'samples': features}),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return List<int>.from(data['predictions']);
+    } else {
+      throw Exception('Failed to predict donors');
+    }
+  }
+
+  // Send email notification to donor
+  static Future<void> sendNotifications(List<Donor> donors) async {
+    for (final donor in donors) {
+      await http.post(
+        Uri.parse('$_baseUrl/send-email'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'to_email': donor.email,
+          'fullname': donor.fullname,
+          'prediction': donor.predictionValue,
+        }),
+      );
+    }
+  }
 }

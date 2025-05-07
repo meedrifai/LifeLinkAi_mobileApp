@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lifelinkai/screens/dashboard/donations_page.dart';
+import 'package:lifelinkai/screens/dashboard/who_will_donate_page.dart';
 import 'package:lifelinkai/screens/homepage.dart';
 import 'package:lifelinkai/screens/login_page.dart';
 import 'package:lifelinkai/models/user.dart';
-import 'package:lifelinkai/screens/dashboard/who_will_donate_page.dart';
+import 'package:lifelinkai/models/donor.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Set preferred orientations
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Set system UI overlay style
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -30,14 +48,30 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const LoginScreen());
           case '/donationsPage':
             final user = settings.arguments as User;
-            return MaterialPageRoute(
-              builder: (_) => DonationsPage(user: user), 
-            );
+            return MaterialPageRoute(builder: (_) => DonationsPage(user: user));
           case '/whoWillDonatePage':
-            final user = settings.arguments as User;
-            return MaterialPageRoute(
-              builder: (_) => WhoWillDonatePage(user: user),
-            );
+            // Handle both direct User object and Map arguments
+            if (settings.arguments is Map<String, dynamic>) {
+              final args = settings.arguments as Map<String, dynamic>;
+              final user = args['user'] as User;
+              final donors = args['donors'] as List<Donor>;
+              return MaterialPageRoute(
+                builder: (_) => WhoWillDonatePage(
+                  user: user,
+                  donors: donors,
+                ),
+              );
+            } else {
+              // For backward compatibility with existing code
+              final user = settings.arguments as User;
+              // Create an empty list of donors when only user is passed
+              return MaterialPageRoute(
+                builder: (_) => WhoWillDonatePage(
+                  user: user,
+                  donors: const [],
+                ),
+              );
+            }
           default:
             return MaterialPageRoute(
               builder: (_) => const Scaffold(
