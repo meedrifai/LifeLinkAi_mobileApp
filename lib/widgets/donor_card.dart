@@ -5,76 +5,55 @@ import '../models/donor.dart';
 class DonorCard extends StatelessWidget {
   final Donor donor;
 
-  const DonorCard({
-    Key? key, 
-    required this.donor,
-  }) : super(key: key);
+  const DonorCard({super.key, required this.donor});
 
-  Color _getBloodTypeColor(String bloodType) {
+  Color getBloodTypeColor(String bloodType) {
     final types = {
-      'A+': Colors.red[500]!,
-      'A-': Colors.red[400]!,
-      'B+': Colors.blue[500]!,
-      'B-': Colors.blue[400]!,
-      'AB+': Colors.purple[500]!,
-      'AB-': Colors.purple[400]!,
-      'O+': Colors.green[500]!,
-      'O-': Colors.green[400]!,
+      'A+': const Color(0xFFEF4444),
+      'A-': const Color(0xFFF87171),
+      'B+': const Color(0xFF3B82F6),
+      'B-': const Color(0xFF60A5FA),
+      'AB+': const Color(0xFF8B5CF6),
+      'AB-': const Color(0xFFA78BFA),
+      'O+': const Color(0xFF10B981),
+      'O-': const Color(0xFF34D399),
     };
-    return types[bloodType] ?? Colors.grey[500]!;
+    return types[bloodType] ?? Colors.grey;
   }
 
-  Widget _getPredictionBadge(String prediction, String? color) {
+  Widget getPredictionBadge(String prediction, String? color) {
+    late Color backgroundColor;
+    late Color textColor;
+    late Color dotColor;
+
     if (color == "green") {
-      return Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: Colors.green[500],
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            prediction,
-            style: TextStyle(
-              color: Colors.green[800],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      );
+      backgroundColor = const Color(0xFFDCFCE7);
+      textColor = const Color(0xFF166534);
+      dotColor = const Color(0xFF10B981);
     } else if (color == "red") {
-      return Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: Colors.red[500],
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            prediction,
-            style: TextStyle(
-              color: Colors.red[800],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      );
+      backgroundColor = const Color(0xFFFEE2E2);
+      textColor = const Color(0xFFB91C1C);
+      dotColor = const Color(0xFFEF4444);
     } else {
-      return Row(
+      backgroundColor = const Color(0xFFF3F4F6);
+      textColor = const Color(0xFF4B5563);
+      dotColor = const Color(0xFF9CA3AF);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: Colors.grey[400],
+              color: dotColor,
               shape: BoxShape.circle,
             ),
           ),
@@ -82,47 +61,41 @@ class DonorCard extends StatelessWidget {
           Text(
             prediction,
             style: TextStyle(
-              color: Colors.grey[800],
+              color: textColor,
               fontWeight: FontWeight.w500,
+              fontSize: 14,
             ),
           ),
         ],
-      );
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
-    final firstDonation = donor.firstDonationDate != null 
-        ? dateFormat.format(donor.firstDonationDate!)
-        : 'N/A';
-    final lastDonation = dateFormat.format(donor.lastDonationDate);
+    final DateFormat dateFormatter = DateFormat('yyyy-MM-dd');
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    final DateTime lastDonation = DateTime.parse(donor.lastDonationDate);
+    final String formattedLastDonation = dateFormatter.format(lastDonation);
+    
+    final String formattedFirstDonation = donor.firstDonationDate != null 
+        ? dateFormatter.format(DateTime.parse(donor.firstDonationDate!))
+        : 'N/A';
+    
+    final int recency = DateTime.now().difference(lastDonation).inDays ~/ 30;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey[100]!),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Card Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[100]!),
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -140,7 +113,6 @@ class DonorCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1F2937),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -149,12 +121,12 @@ class DonorCard extends StatelessWidget {
                       ),
                       if (donor.cin != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
+                          padding: const EdgeInsets.only(top: 4.0, left: 26.0),
                           child: Text(
                             'CIN: ${donor.cin}',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -162,17 +134,17 @@ class DonorCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _getBloodTypeColor(donor.bloodType),
-                    borderRadius: BorderRadius.circular(20),
+                    color: getBloodTypeColor(donor.bloodType),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     donor.bloodType,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 14,
                     ),
                   ),
                 ),
@@ -180,27 +152,31 @@ class DonorCard extends StatelessWidget {
             ),
           ),
           
+          const Divider(height: 1),
+          
           // Card Body
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                _infoRow('Recency:', '${donor.recencyMonths} months', Icons.access_time),
+                _buildInfoRow('Recency:', '$recency months', Icons.access_time),
                 const SizedBox(height: 8),
-                _infoRow('Frequency:', '${donor.frequency}', Icons.trending_up),
+                _buildInfoRow('Frequency:', '${donor.frequency ?? 0}', Icons.show_chart),
                 const SizedBox(height: 8),
-                _infoRow('First donation:', firstDonation, Icons.calendar_today),
+                _buildInfoRow('First Donation:', formattedFirstDonation, Icons.calendar_today),
                 const SizedBox(height: 8),
-                _infoRow('Last donation:', lastDonation, Icons.calendar_month),
+                _buildInfoRow('Last Donation:', formattedLastDonation, Icons.calendar_today),
               ],
             ),
           ),
+          
+          const Spacer(),
           
           // Card Footer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: Colors.grey.shade100,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
@@ -214,24 +190,10 @@ class DonorCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
+                    color: Colors.grey.shade700,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: donor.predictionColor == 'green'
-                        ? Colors.green[50]
-                        : donor.predictionColor == 'red'
-                            ? Colors.red[50]
-                            : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: _getPredictionBadge(
-                    donor.prediction ?? 'Not defined',
-                    donor.predictionColor,
-                  ),
-                ),
+                getPredictionBadge(donor.prediction ?? 'Not defined', donor.predictionColor),
               ],
             ),
           ),
@@ -240,23 +202,19 @@ class DonorCard extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value, IconData icon) {
+  Widget _buildInfoRow(String label, String value, IconData icon) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: Colors.grey[400],
-            ),
+            Icon(icon, size: 16, color: Colors.grey.shade400),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: Colors.grey.shade600,
               ),
             ),
           ],
@@ -266,7 +224,6 @@ class DonorCard extends StatelessWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1F2937),
           ),
         ),
       ],
