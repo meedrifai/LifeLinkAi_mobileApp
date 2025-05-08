@@ -1,60 +1,62 @@
 import 'package:flutter/material.dart';
+import '../models/donor.dart';
 
 class BloodStatsDashboard extends StatelessWidget {
-  // Changed from Map<String, dynamic> to Map to accept any Map type
-  final Map bloodStats;
+  final BloodStats bloodStats;
 
-  const BloodStatsDashboard({Key? key, required this.bloodStats}) : super(key: key);
+  const BloodStatsDashboard({
+    Key? key,
+    required this.bloodStats,
+  }) : super(key: key);
 
-  Color getBloodTypeColor(String bloodType) {
-    final types = {
-      'A+': const Color(0xFFEF4444),
-      'A-': const Color(0xFFF87171),
-      'B+': const Color(0xFF3B82F6),
-      'B-': const Color(0xFF60A5FA),
-      'AB+': const Color(0xFF8B5CF6),
-      'AB-': const Color(0xFFA78BFA),
-      'O+': const Color(0xFF10B981),
-      'O-': const Color(0xFF34D399),
-    };
-    return types[bloodType] ?? Colors.grey;
-  }
-
-  String formatBloodVolume(int ml) {
+  // Format milliliters for display, converting to liters when appropriate
+  String _formatBloodVolume(int ml) {
     if (ml >= 1000) {
       return '${(ml / 1000).toStringAsFixed(1)}L';
     }
     return '${ml}ml';
   }
 
+  // Get color for blood type display
+  Color _getBloodTypeColor(String bloodType) {
+    final types = {
+      'A+': Colors.red[500]!,
+      'A-': Colors.red[400]!,
+      'B+': Colors.blue[500]!,
+      'B-': Colors.blue[400]!,
+      'AB+': Colors.purple[500]!,
+      'AB-': Colors.purple[400]!,
+      'O+': Colors.green[500]!,
+      'O-': Colors.green[400]!,
+    };
+    return types[bloodType] ?? Colors.grey[500]!;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Safely access the byType map with null checks and proper casting
-    final Map byType = bloodStats['byType'] as Map? ?? {};
-    final int totalVolume = bloodStats['total'] as int? ?? 0;
-    final int potentialDonors = bloodStats['potentialDonors'] as int? ?? 0;
-    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: Colors.grey[100]!),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Dashboard header
             Row(
               children: [
-                const Icon(Icons.water_drop, color: Color(0xFFDC2626), size: 22),
+                Icon(Icons.water_drop, color: Colors.red[600], size: 22),
                 const SizedBox(width: 8),
                 const Text(
                   'Predicted Blood Collection',
@@ -68,134 +70,127 @@ class BloodStatsDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Stats grid
-            Column(
-              children: [
-                // Total volume card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFFFEF2F2), Color(0xFFFEE2E2)],
+            // Total volume section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFFFEF2F2),
+                    const Color(0xFFFEE2E2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Volume',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red[600],
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatBloodVolume(bloodStats.totalVolume),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'From ${bloodStats.potentialDonors} potential donors',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Blood type breakdown
+            bloodStats.byType.isEmpty
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.grey[400], size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Run prediction to see blood volume by type',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: bloodStats.byType.length,
+                    itemBuilder: (context, index) {
+                      final bloodType = bloodStats.byType.keys.elementAt(index);
+                      final stats = bloodStats.byType[bloodType]!;
+                      
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Total Volume',
-                            style: TextStyle(
-                              color: Color(0xFFDC2626),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: _getBloodTypeColor(bloodType),
+                            child: Text(
+                              bloodType,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            formatBloodVolume(totalVolume),
+                            _formatBloodVolume(stats.volume),
                             style: const TextStyle(
-                              fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1F2937),
+                              fontSize: 16,
                             ),
                           ),
                           Text(
-                            'From $potentialDonors potential donors',
+                            '${stats.count} donors',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: Colors.grey[600],
                             ),
                           ),
                         ],
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Blood types grid
-                byType.isNotEmpty
-                    ? GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 4,
-                        childAspectRatio: 0.8,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        children: byType.entries.map((entry) {
-                          final String bloodType = entry.key.toString();
-                          final Map data = entry.value as Map;
-                          final int volume = data['volume'] as int? ?? 0;
-                          final int count = data['count'] as int? ?? 0;
-                          
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: getBloodTypeColor(bloodType),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    bloodType,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                formatBloodVolume(volume),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              Text(
-                                '$count donors',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      )
-                    : Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Run prediction to see blood volume by type',
-                              style: TextStyle(color: Colors.grey, fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
-              ],
-            ),
           ],
         ),
       ),
