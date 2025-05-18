@@ -1,10 +1,10 @@
 class Donor {
   final String id;
   final String fullname;
-  final String? cin;
+  final String cin;
   final String bloodType;
   final String lastDonationDate;
-  final String? firstDonationDate;
+  final String firstDonationDate;
   final int? frequency;
   final String email;
   final String? prediction;
@@ -14,10 +14,10 @@ class Donor {
   Donor({
     required this.id,
     required this.fullname,
-    this.cin,
+    required this.cin,
     required this.bloodType,
     required this.lastDonationDate,
-    this.firstDonationDate,
+    required this.firstDonationDate,
     this.frequency,
     required this.email,
     this.prediction,

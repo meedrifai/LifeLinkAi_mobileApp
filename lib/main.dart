@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lifelinkai/screens/dashboard/donations_page.dart';
 import 'package:lifelinkai/screens/dashboard/who_will_donate_page.dart';
+import 'package:lifelinkai/screens/dashboard/add_donor_page.dart';
 import 'package:lifelinkai/screens/homepage.dart';
 import 'package:lifelinkai/screens/login_page.dart';
 import 'package:lifelinkai/models/user.dart';
-import 'package:lifelinkai/models/donor.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,32 +51,42 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => DonationsPage(user: user));
           case '/whoWillDonatePage':
             // Handle both direct User object and Map arguments
-            if (settings.arguments is Map<String, dynamic>) {
-              final args = settings.arguments as Map<String, dynamic>;
+            if (settings.arguments is Map) {
+              final args = settings.arguments as Map;
               final user = args['user'] as User;
-              final donors = args['donors'] as List<Donor>;
+              final donors = args['donors'] as List;
               return MaterialPageRoute(
-                builder: (_) => WhoWillDonatePage(
-                  user: user,
-                  donors: donors,
-                ),
+                builder: (_) => WhoWillDonatePage(user: user),
               );
             } else {
               // For backward compatibility with existing code
               final user = settings.arguments as User;
               // Create an empty list of donors when only user is passed
               return MaterialPageRoute(
-                builder: (_) => WhoWillDonatePage(
-                  user: user,
-                  donors: const [],
-                ),
+                builder: (_) => WhoWillDonatePage(user: user),
+              );
+            }
+          case '/addDonorPage':
+            // Handle the new add donor page route
+            if (settings.arguments is Map) {
+              final args = settings.arguments as Map;
+              final user = args['user'] as User;
+              return MaterialPageRoute(
+                builder: (_) => AddDonorPage(user: user),
+              );
+            } else {
+              // For backward compatibility if only user is passed
+              final user = settings.arguments as User;
+              return MaterialPageRoute(
+                builder: (_) => AddDonorPage(user: user),
               );
             }
           default:
             return MaterialPageRoute(
-              builder: (_) => const Scaffold(
-                body: Center(child: Text('Page not found')),
-              ),
+              builder:
+                  (_) => const Scaffold(
+                    body: Center(child: Text('Page not found')),
+                  ),
             );
         }
       },
