@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:lifelinkai/models/donation.dart';
 import 'package:lifelinkai/models/donor.dart';
 import 'package:lifelinkai/models/user.dart';
 import 'package:lifelinkai/services/api_service.dart';
 import 'package:lifelinkai/widgets/blood_stats_dashboard.dart';
 import 'package:lifelinkai/widgets/donor_card.dart';
 
+import '../../models/donor.dart';
+import '../../models/user.dart';
+import '../../services/api_service.dart';
+
 class WhoWillDonatePage extends StatefulWidget {
   final List<Donor> donors;
+  
 
   const WhoWillDonatePage({Key? key, required this.donors, required User user}) : super(key: key);
 
@@ -16,6 +22,7 @@ class WhoWillDonatePage extends StatefulWidget {
 
 class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
   late List<Donor> donorList;
+  List<Donation> _donations = [];
   bool isLoading = false;
   bool isSending = false;
   String searchQuery = '';
@@ -397,7 +404,6 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
           ],
         ),
       ),
-      // Notification Toast
       floatingActionButton: notificationMessage != null
           ? Container(
               margin: const EdgeInsets.only(bottom: 16),
