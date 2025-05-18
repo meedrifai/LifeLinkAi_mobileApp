@@ -87,9 +87,9 @@ class _AddDonorPageState extends State<AddDonorPage> {
         'cin': _cinController.text,
         'fullname': _fullnameController.text,
         'email': _emailController.text,
-        'phone': _phoneController.text,
-        'bloodType': _selectedBloodType,
-        'hospital': widget.user.nomHospital,
+        'num_tel': _phoneController.text,
+        'blood_type': _selectedBloodType,
+        'hospital_id': widget.user.id,
       };
 
       // Appel à l'API
