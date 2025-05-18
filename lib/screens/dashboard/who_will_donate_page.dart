@@ -7,14 +7,8 @@ import 'package:lifelinkai/widgets/blood_stats_dashboard.dart';
 import 'package:lifelinkai/widgets/bottom_nav_bar.dart';
 import 'package:lifelinkai/widgets/donor_card.dart';
 
-import '../../models/donor.dart';
-import '../../models/user.dart';
-import '../../services/api_service.dart';
-
 class WhoWillDonatePage extends StatefulWidget {
-
   final User user;
-
 
   const WhoWillDonatePage({super.key, required this.user});
 
@@ -23,9 +17,7 @@ class WhoWillDonatePage extends StatefulWidget {
 }
 
 class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
-
   List<Donor> donorList = [];
-
   bool isLoading = false;
   bool isSending = false;
   String searchQuery = '';
@@ -260,35 +252,26 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
 
   // Handle navigation between pages
   void _handleNavigation(int index) {
-    // Mettre à jour l'index après avoir navigué pour éviter les problèmes de synchronisation
+    // Update index after navigation to avoid sync issues
     switch (index) {
       case 0:
         // Navigate to Donors page (main page)
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamed(
           context,
-          '/donationsPage', // Assurez-vous que c'est le bon nom de route
+          '/donationsPage',
           arguments: widget.user,
-        ).then((_) {
-          // Cette partie ne sera probablement jamais exécutée à cause du pushReplacement
-          setState(() {
-            _currentNavIndex = index;
-          });
-        });
+        );
         break;
       case 1:
         // Navigate to Add Donation page
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamed(
           context,
           '/addDonorPage',
           arguments: widget.user,
-        ).then((_) {
-          setState(() {
-            _currentNavIndex = index;
-          });
-        });
+        );
         break;
       case 2:
-        // Déjà sur Who Will Donate page
+        // Already on Who Will Donate page
         setState(() {
           _currentNavIndex = index;
         });
@@ -300,168 +283,193 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body:
-          isLoading && donorList.isEmpty
-              ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFFDC2626)),
-              )
-              : SafeArea(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverAppBar(
-                      expandedHeight: 160,
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      floating: true,
-                      pinned: false,
-                      actions: [
-                        IconButton(
-                          icon: const Icon(Icons.logout, color: Colors.white),
-                          onPressed: () {
-                            Navigator.pushReplacementNamed(context, '/login');
-                          },
-                        ),
-                      ],
-                      flexibleSpace: Container(
+      body: isLoading && donorList.isEmpty
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFDC2626)),
+            )
+          : SafeArea(
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 160,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    floating: true,
+                    pinned: true,
+                    centerTitle: true,
+                    title: Text(
+                      widget.user.nomHospital,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    actions: [
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, color: Colors.white),
+                        onSelected: (value) {
+                          if (value == 'logout') {
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/',
+                              (route) => false,
+                            );
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Logout'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                             colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
                           ),
                           borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(16),
-                            bottomRight: Radius.circular(16),
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
                           ),
                         ),
-                        child: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.water_drop,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        widget.user.nomHospital,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              right: -50,
+                              bottom: -20,
+                              child: Icon(
+                                Icons.water_drop,
+                                size: 200,
+                                color: Colors.white.withOpacity(0.1),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16, top: 60, right: 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.psychology,
+                                        color: Colors.white,
+                                        size: 24,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Blood Donation Prediction',
-                                  style: TextStyle(
-                                    color: Color(0xFFFECACA),
-                                    fontSize: 14,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "Donation Prediction",
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 40,
-                                  child: TextField(
-                                    onChanged: (value) {
-                                      setState(() {
-                                        searchQuery = value;
-                                      });
-                                      updateBloodStats();
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: 'Search by CIN...',
-                                      hintStyle: const TextStyle(
-                                        color: Color(0xFFFECACA),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    height: 40,
+                                    child: TextField(
+                                      onChanged: (value) {
+                                        setState(() {
+                                          searchQuery = value;
+                                        });
+                                        updateBloodStats();
+                                      },
+                                      decoration: InputDecoration(
+                                        hintText: 'Search by CIN...',
+                                        hintStyle: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 14,
+                                        ),
+                                        prefixIcon: const Icon(
+                                          Icons.search,
+                                          color: Colors.white70,
+                                          size: 20,
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.white24,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          vertical: 0,
+                                        ),
+                                        isDense: true,
+                                      ),
+                                      style: const TextStyle(
+                                        color: Colors.white,
                                         fontSize: 14,
                                       ),
-                                      prefixIcon: const Icon(
-                                        Icons.search,
-                                        color: Color(0xFFFECACA),
-                                        size: 20,
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.white.withOpacity(0.2),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            vertical: 0,
-                                          ),
-                                      isDense: true,
-                                    ),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 8.0,
-                        ),
-                        child: BloodStatsDashboard(bloodStats: bloodStats),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 8.0,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.psychology,
-                                  color: Colors.blue,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 6),
-                                const Text(
-                                  'Donor Predictions',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1F2937),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildActionButtons(),
                           ],
                         ),
                       ),
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16.0),
-                      sliver:
-                          filteredDonors.isNotEmpty
-                              ? SliverList(
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
+                      child: BloodStatsDashboard(bloodStats: bloodStats),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.psychology,
+                                color: Colors.blue,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Donor Predictions',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1F2937),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildActionButtons(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16.0),
+                    sliver:
+                        filteredDonors.isNotEmpty
+                            ? SliverList(
                                 delegate: SliverChildBuilderDelegate((
                                   context,
                                   index,
@@ -475,11 +483,11 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
                                   );
                                 }, childCount: filteredDonors.length),
                               )
-                              : SliverToBoxAdapter(child: _buildEmptyState()),
-                    ),
-                  ],
-                ),
+                            : SliverToBoxAdapter(child: _buildEmptyState()),
+                  ),
+                ],
               ),
+            ),
       floatingActionButton:
           notificationMessage != null ? _buildNotificationToast() : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

@@ -10,47 +10,23 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_svg: ^2.0.7
-
+  
+  # Core packages
   cupertino_icons: ^1.0.8
-
-  # HTTP client to talk to FastAPI backend
+  provider: ^6.0.5
   http: ^1.2.1
-
-  # Secure local storage for tokens (login)
   flutter_secure_storage: ^9.0.0
-
-  # State management
-  provider: ^6.1.2
-  # riverpod: ^2.4.9  # Uncomment if using Riverpod instead of Provider
-
-  # For local notifications
-  flutter_local_notifications: ^17.0.0
-
-  # Chatbot UI 
-  dash_chat_2: ^0.0.20
-
-  # Form validation and utilities
+  
+  # UI packages
+  flutter_svg: ^2.0.7
   form_field_validator: ^1.1.0
-
-  # For routing
-  go_router: ^13.1.0
-
-  # For JSON serialization (optional if you plan to use model classes)
-  json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
 
-  # If using json_serializable
-  build_runner: ^2.4.9
-  json_serializable: ^6.7.1
-
 flutter:
-
   uses-material-design: true
 
   assets:

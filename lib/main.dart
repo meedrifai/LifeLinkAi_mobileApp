@@ -18,7 +18,7 @@ void main() {
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
+    const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ),
@@ -43,50 +43,55 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/':
-            return MaterialPageRoute(builder: (_) => const HomePage());
+            return MaterialPageRoute(
+              builder: (_) => const HomePage(),
+            );
           case '/login':
-            return MaterialPageRoute(builder: (_) => const LoginScreen());
+            return MaterialPageRoute(
+              builder: (_) => const LoginScreen(),
+            );
           case '/donationsPage':
             final user = settings.arguments as User;
-            return MaterialPageRoute(builder: (_) => DonationsPage(user: user));
+            return MaterialPageRoute(
+              builder: (_) => DonationsPage(user: user),
+              // This ensures back button goes to previous page
+              maintainState: true,
+            );
           case '/whoWillDonatePage':
-            // Handle both direct User object and Map arguments
             if (settings.arguments is Map) {
               final args = settings.arguments as Map;
               final user = args['user'] as User;
-              final donors = args['donors'] as List;
               return MaterialPageRoute(
                 builder: (_) => WhoWillDonatePage(user: user),
+                maintainState: true,
               );
             } else {
-              // For backward compatibility with existing code
               final user = settings.arguments as User;
-              // Create an empty list of donors when only user is passed
               return MaterialPageRoute(
                 builder: (_) => WhoWillDonatePage(user: user),
+                maintainState: true,
               );
             }
           case '/addDonorPage':
-            // Handle the new add donor page route
             if (settings.arguments is Map) {
               final args = settings.arguments as Map;
               final user = args['user'] as User;
               return MaterialPageRoute(
                 builder: (_) => AddDonorPage(user: user),
+                maintainState: true,
               );
             } else {
-              // For backward compatibility if only user is passed
               final user = settings.arguments as User;
               return MaterialPageRoute(
                 builder: (_) => AddDonorPage(user: user),
+                maintainState: true,
               );
             }
           default:
             return MaterialPageRoute(
-              builder:
-                  (_) => const Scaffold(
-                    body: Center(child: Text('Page not found')),
-                  ),
+              builder: (_) => const Scaffold(
+                body: Center(child: Text('Page not found')),
+              ),
             );
         }
       },

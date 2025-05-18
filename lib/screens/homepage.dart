@@ -80,49 +80,73 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   child: Stack(
                     children: [
                       // Texte complet du slogan
-                      const Text(
-                        'Connecting Lives Through Blood Donation',
+                      RichText(
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                          height: 2.0
+                        text: const TextSpan(
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            height: 1.3,
+                            letterSpacing: 0.5,
+                          ),
+                          children: [
+                            TextSpan(text: 'Connecting '),
+                            TextSpan(
+                              text: 'Lives',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 42,
+                              ),
+                            ),
+                            TextSpan(text: ' Through\n'),
+                            TextSpan(
+                              text: 'Blood Donation',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       
+                      // Line under "Lives"
                       Positioned(
-                        left: 165, 
-                        right: 128,
-                        bottom: 55,
-                        child: AnimatedBuilder(
-                          animation: _controller,
-                          builder: (context, child) {
-                            return FractionallySizedBox(
-                              widthFactor: _widthAnimation.value,
-                              alignment: Alignment.center,
-                              child: Container(
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      _colorAnimation.value!.withOpacity(0.4),
-                                      _colorAnimation.value!,
-                                      _colorAnimation.value!.withOpacity(0.4),
+                        left: 0,
+                        right: 0,
+                        bottom: 45,
+                        child: Center(
+                          child: Container(
+                            width: 100,
+                            child: AnimatedBuilder(
+                              animation: _controller,
+                              builder: (context, child) {
+                                return Container(
+                                  width: 100,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        _colorAnimation.value!.withOpacity(0.0),
+                                        _colorAnimation.value!,
+                                        _colorAnimation.value!.withOpacity(0.0),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _colorAnimation.value!.withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _colorAnimation.value!.withOpacity(0.3),
-                                      blurRadius: 3,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -131,9 +155,26 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
                 const SizedBox(height: 40),
 
+                // Description text
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    'Join us in making a difference. Every drop counts in saving lives.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[700],
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
                 // Bouton Get Started
-                SizedBox(
+                Container(
                   width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pushNamed(context, '/login');
@@ -145,6 +186,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       ),
                       backgroundColor: Colors.redAccent,
                       elevation: 3,
+                      shadowColor: Colors.redAccent.withOpacity(0.5),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,

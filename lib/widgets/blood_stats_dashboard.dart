@@ -148,51 +148,62 @@ class BloodStatsDashboard extends StatelessWidget {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 4,
-                            childAspectRatio: 1.0,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.8,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
                           ),
                           itemCount: (bloodStats['byType'] as Map).length,
                           itemBuilder: (context, index) {
                             final bloodType = (bloodStats['byType'] as Map).keys.elementAt(index);
                             final data = (bloodStats['byType'] as Map)[bloodType];
                             
-                            return Column(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: getBloodTypeColor(bloodType),
-                                    shape: BoxShape.circle,
+                            return Container(
+                              padding: const EdgeInsets.all(2),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: getBloodTypeColor(bloodType),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        bloodType,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  child: Center(
+                                  const SizedBox(height: 4),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
                                     child: Text(
-                                      bloodType,
+                                      formatBloodVolume(data['volume']),
                                       style: const TextStyle(
-                                        color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  formatBloodVolume(data['volume']),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                  const SizedBox(height: 2),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '${data['count']} donors',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  '${data['count']} donors',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             );
                           },
                         ),
@@ -216,11 +227,14 @@ class BloodStatsDashboard extends StatelessWidget {
                           color: Color(0xFF9CA3AF),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Run prediction to see blood volume by type',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
+                        Flexible(
+                          child: Text(
+                            'Run prediction to see blood volume by type',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
                           ),
                         ),
                       ],

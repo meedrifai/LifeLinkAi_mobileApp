@@ -150,11 +150,11 @@ class _DonationsPageState extends State<DonationsPage> {
         break;
       case 1:
         // Navigate to Add Donation page
-        Navigator.pushReplacementNamed(context, '/addDonorPage', arguments: widget.user);
+        Navigator.pushNamed(context, '/addDonorPage', arguments: widget.user);
         break;
       case 2:
         // Navigate to Who will Donate page
-        Navigator.pushReplacementNamed(context, '/whoWillDonatePage', arguments: widget.user);
+        Navigator.pushNamed(context, '/whoWillDonatePage', arguments: widget.user);
         break;
     }
   }
@@ -191,38 +191,125 @@ class _DonationsPageState extends State<DonationsPage> {
                 pinned: true,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    "${widget.user.nomHospital} Blood Donations",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFB71C1C), Color(0xFFE53935)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          right: 20,
-                          bottom: 10,
-                          child: Icon(
-                            Icons.opacity,
-                            size: 80,
-                            color: Colors.white.withOpacity(0.2),
+                centerTitle: true,
+                title: const SizedBox.shrink(), // Empty when expanded
+                flexibleSpace: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    // Only show title when collapsed
+                    final bool isCollapsed = constraints.biggest.height <= kToolbarHeight + MediaQuery.of(context).padding.top;
+                    
+                    // Dynamically update the title
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (isCollapsed && (AppBar().title != Text(widget.user.nomHospital))) {
+                        setState(() {
+                          (context as Element).markNeedsBuild();
+                        });
+                      }
+                    });
+                    
+                    return FlexibleSpaceBar(
+                      title: isCollapsed 
+                        ? Text(
+                            "${widget.user.nomHospital}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          )
+                        : null,
+                      background: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFDC2626),
+                              Color(0xFFB91C1C),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              right: -50,
+                              bottom: -20,
+                              child: Icon(
+                                Icons.water_drop,
+                                size: 200,
+                                color: Colors.white.withOpacity(0.1),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16, top: 70),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.water_drop,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        "Blood Donations",
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 20),
+                                  Text(
+                                    "${widget.user.nomHospital}",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 24,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
+                actions: [
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: Colors.white),
+                    onSelected: (value) {
+                      if (value == 'logout') {
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/',
+                          (route) => false,
+                        );
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      const PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Logout'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
 
               // Search Bar
@@ -426,13 +513,6 @@ class _DonationsPageState extends State<DonationsPage> {
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentNavIndex,
         onTap: _handleNavigation,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushReplacementNamed(context, '/login');
-        },
-        backgroundColor: Colors.red[700],
-        child: Icon(Icons.logout, color: Colors.white),
       ),
     );
   }

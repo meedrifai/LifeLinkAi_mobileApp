@@ -55,17 +55,17 @@ class _AddDonorPageState extends State<AddDonorPage> {
     
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamed(
           context,
           '/donationsPage',
           arguments: widget.user,
         );
         break;
       case 1:
-        // Déjà sur cette page
+        // Already on this page
         break;
       case 2:
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamed(
           context,
           '/whoWillDonatePage',
           arguments: widget.user,
@@ -176,60 +176,92 @@ class _AddDonorPageState extends State<AddDonorPage> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               floating: true,
-              pinned: false,
+              pinned: true,
+              centerTitle: true,
+              title: Text(
+                widget.user.nomHospital,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/login');
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: Colors.white),
+                  onSelected: (value) {
+                    if (value == 'logout') {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/',
+                        (route) => false,
+                      );
+                    }
                   },
+                  itemBuilder: (BuildContext context) => [
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Logout'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -50,
+                        bottom: -20,
+                        child: Icon(
+                          Icons.water_drop,
+                          size: 200,
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, top: 60),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.water_drop, color: Colors.white, size: 24),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                widget.user.nomHospital,
-                                style: const TextStyle(
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.person_add,
                                   color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                  size: 24,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Add New Donor",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Add New Donor',
-                          style: TextStyle(
-                            color: Color(0xFFFECACA),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
