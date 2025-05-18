@@ -150,7 +150,7 @@ class _DonationsPageState extends State<DonationsPage> {
         break;
       case 1:
         // Navigate to Add Donation page
-        Navigator.pushReplacementNamed(context, '/add_donor_page', arguments: widget.user);
+        Navigator.pushReplacementNamed(context, '/addDonorPage', arguments: widget.user);
         break;
       case 2:
         // Navigate to Who will Donate page

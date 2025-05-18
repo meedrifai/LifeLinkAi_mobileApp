@@ -4,6 +4,7 @@ import 'package:lifelinkai/models/donor.dart';
 import 'package:lifelinkai/models/user.dart';
 import 'package:lifelinkai/services/api_service.dart';
 import 'package:lifelinkai/widgets/blood_stats_dashboard.dart';
+import 'package:lifelinkai/widgets/bottom_nav_bar.dart';
 import 'package:lifelinkai/widgets/donor_card.dart';
 
 class WhoWillDonatePage extends StatefulWidget {
@@ -23,9 +24,9 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
   Map<String, dynamic> bloodStats = {
     'total': 0,
     'byType': {},
-    'potentialDonors': 0
+    'potentialDonors': 0,
   };
-
+  int _currentNavIndex = 0; // For bottom nav bar
   String? notificationMessage;
   bool isSuccess = true;
 
@@ -41,13 +42,19 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     });
 
     try {
-      final data = await ApiService.fetchDonationsByHospital(widget.user.nomHospital);
-      final filteredDonations = data.where((donation) {
-        final lastDonationDate = DateTime.parse(donation.lastDonationDate);
-        final now = DateTime.now();
-        final diffMonths = (now.year - lastDonationDate.year) * 12 + now.month - lastDonationDate.month;
-        return diffMonths > 3;
-      }).toList();
+      final data = await ApiService.fetchDonationsByHospital(
+        widget.user.nomHospital,
+      );
+      final filteredDonations =
+          data.where((donation) {
+            final lastDonationDate = DateTime.parse(donation.lastDonationDate);
+            final now = DateTime.now();
+            final diffMonths =
+                (now.year - lastDonationDate.year) * 12 +
+                now.month -
+                lastDonationDate.month;
+            return diffMonths > 3;
+          }).toList();
 
       donorList = _convertDonationToDonorList(filteredDonations);
       updateBloodStats();
@@ -95,14 +102,17 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     final Map<String, dynamic> stats = {
       'total': 0,
       'byType': {},
-      'potentialDonors': 0
+      'potentialDonors': 0,
     };
 
-    final donorsToCount = searchQuery.isNotEmpty
-        ? donorList.where((donor) =>
-            donor.cin.isNotEmpty &&
-            donor.cin.toLowerCase().contains(searchQuery.toLowerCase()))
-        : donorList;
+    final donorsToCount =
+        searchQuery.isNotEmpty
+            ? donorList.where(
+              (donor) =>
+                  donor.cin.isNotEmpty &&
+                  donor.cin.toLowerCase().contains(searchQuery.toLowerCase()),
+            )
+            : donorList;
 
     for (final donor in donorsToCount) {
       final willDonate = donor.predictionValue == 1;
@@ -112,10 +122,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
         stats['total'] = (stats['total'] as int) + bloodPerDonor;
 
         if (!(stats['byType'] as Map).containsKey(donor.bloodType)) {
-          (stats['byType'] as Map)[donor.bloodType] = {
-            'count': 0,
-            'volume': 0
-          };
+          (stats['byType'] as Map)[donor.bloodType] = {'count': 0, 'volume': 0};
         }
 
         (stats['byType'] as Map)[donor.bloodType]['count'] += 1;
@@ -131,18 +138,15 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
   Map<String, dynamic> computeFeatures(Donor donor) {
     final now = DateTime.now();
     final lastDonationDate = DateTime.parse(donor.lastDonationDate);
-    final firstDonationDate = donor.firstDonationDate.isNotEmpty
-        ? DateTime.parse(donor.firstDonationDate)
-        : now;
+    final firstDonationDate =
+        donor.firstDonationDate.isNotEmpty
+            ? DateTime.parse(donor.firstDonationDate)
+            : now;
 
     final recency = ((now.difference(lastDonationDate).inDays) / 30.44).floor();
     final time = ((now.difference(firstDonationDate).inDays) / 30.44).floor();
 
-    return {
-      'recency': recency,
-      'frequency': donor.frequency,
-      'time': time
-    };
+    return {'recency': recency, 'frequency': donor.frequency, 'time': time};
   }
 
   Future<void> handlePredict() async {
@@ -213,7 +217,8 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
       isSending = true;
     });
 
-    final targets = donorList.where((d) => d.predictionValue == predictedValue).toList();
+    final targets =
+        donorList.where((d) => d.predictionValue == predictedValue).toList();
 
     try {
       await ApiService.sendNotifications(targets);
@@ -236,163 +241,244 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     if (searchQuery.isEmpty) {
       return donorList;
     }
-    return donorList.where((donor) =>
-      donor.cin.isNotEmpty &&
-      donor.cin.toLowerCase().contains(searchQuery.toLowerCase())
-    ).toList();
+    return donorList
+        .where(
+          (donor) =>
+              donor.cin.isNotEmpty &&
+              donor.cin.toLowerCase().contains(searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  // Handle navigation between pages
+  void _handleNavigation(int index) {
+    // Mettre à jour l'index après avoir navigué pour éviter les problèmes de synchronisation
+    switch (index) {
+      case 0:
+        // Navigate to Donors page (main page)
+        Navigator.pushReplacementNamed(
+          context,
+          '/donationsPage', // Assurez-vous que c'est le bon nom de route
+          arguments: widget.user,
+        ).then((_) {
+          // Cette partie ne sera probablement jamais exécutée à cause du pushReplacement
+          setState(() {
+            _currentNavIndex = index;
+          });
+        });
+        break;
+      case 1:
+        // Navigate to Add Donation page
+        Navigator.pushReplacementNamed(
+          context,
+          '/addDonorPage',
+          arguments: widget.user,
+        ).then((_) {
+          setState(() {
+            _currentNavIndex = index;
+          });
+        });
+        break;
+      case 2:
+        // Déjà sur Who Will Donate page
+        setState(() {
+          _currentNavIndex = index;
+        });
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: isLoading && donorList.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFDC2626),
-              ),
-            )
-          : SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 160,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    floating: true,
-                    pinned: false,
-                    flexibleSpace: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+      body:
+          isLoading && donorList.isEmpty
+              ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFDC2626)),
+              )
+              : SafeArea(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      expandedHeight: 160,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      floating: true,
+                      pinned: false,
+                      actions: [
+                        IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.white),
+                          onPressed: () {
+                            Navigator.pushReplacementNamed(context, '/login');
+                          },
                         ),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(16),
-                          bottomRight: Radius.circular(16),
+                      ],
+                      flexibleSpace: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(16),
+                            bottomRight: Radius.circular(16),
+                          ),
                         ),
-                      ),
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.water_drop, color: Colors.white, size: 24),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      widget.user.nomHospital,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                        child: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.water_drop,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        widget.user.nomHospital,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Blood Donation Prediction',
+                                  style: TextStyle(
+                                    color: Color(0xFFFECACA),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 40,
+                                  child: TextField(
+                                    onChanged: (value) {
+                                      setState(() {
+                                        searchQuery = value;
+                                      });
+                                      updateBloodStats();
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: 'Search by CIN...',
+                                      hintStyle: const TextStyle(
+                                        color: Color(0xFFFECACA),
+                                        fontSize: 14,
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.search,
+                                        color: Color(0xFFFECACA),
+                                        size: 20,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white.withOpacity(0.2),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 0,
+                                          ),
+                                      isDense: true,
+                                    ),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Blood Donation Prediction',
-                                style: TextStyle(
-                                  color: Color(0xFFFECACA),
-                                  fontSize: 14,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 40,
-                                child: TextField(
-                                  onChanged: (value) {
-                                    setState(() {
-                                      searchQuery = value;
-                                    });
-                                    updateBloodStats();
-                                  },
-                                  decoration: InputDecoration(
-                                    hintText: 'Search by CIN...',
-                                    hintStyle: const TextStyle(color: Color(0xFFFECACA), fontSize: 14),
-                                    prefixIcon: const Icon(Icons.search, color: Color(0xFFFECACA), size: 20),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.2),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                                    isDense: true,
-                                  ),
-                                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: BloodStatsDashboard(bloodStats: bloodStats),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.psychology, color: Colors.blue, size: 20),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Donor Predictions',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1F2937),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildActionButtons(),
-                        ],
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
+                        ),
+                        child: BloodStatsDashboard(bloodStats: bloodStats),
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16.0),
-                    sliver: filteredDonors.isNotEmpty
-                        ? SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final donor = filteredDonors[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12.0),
-                                  child: DonorCard(donor: donor),
-                                );
-                              },
-                              childCount: filteredDonors.length,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.psychology,
+                                  color: Colors.blue,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Donor Predictions',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1F2937),
+                                  ),
+                                ),
+                              ],
                             ),
-                          )
-                        : SliverToBoxAdapter(
-                            child: _buildEmptyState(),
-                          ),
-                  ),
-                ],
+                            const SizedBox(height: 12),
+                            _buildActionButtons(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver:
+                          filteredDonors.isNotEmpty
+                              ? SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final donor = filteredDonors[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 12.0,
+                                    ),
+                                    child: DonorCard(donor: donor),
+                                  );
+                                }, childCount: filteredDonors.length),
+                              )
+                              : SliverToBoxAdapter(child: _buildEmptyState()),
+                    ),
+                  ],
+                ),
               ),
-            ),
-      floatingActionButton: notificationMessage != null ? _buildNotificationToast() : null,
+      floatingActionButton:
+          notificationMessage != null ? _buildNotificationToast() : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentNavIndex,
+        onTap: _handleNavigation,
+      ),
     );
   }
 
@@ -432,17 +518,12 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 14),
-      ),
+      label: Text(label, style: const TextStyle(fontSize: 14)),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         visualDensity: VisualDensity.compact,
       ),
     );
@@ -454,9 +535,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
       decoration: BoxDecoration(
         color: const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFFEE2E2),
-        ),
+        border: Border.all(color: const Color(0xFFFEE2E2)),
       ),
       child: const Center(
         child: Column(
@@ -490,7 +569,8 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+              color:
+                  isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
               width: 1,
             ),
           ),
@@ -499,7 +579,10 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
             children: [
               Icon(
                 isSuccess ? Icons.check_circle : Icons.error,
-                color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                color:
+                    isSuccess
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFEF4444),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -507,7 +590,10 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
                 child: Text(
                   notificationMessage!,
                   style: TextStyle(
-                    color: isSuccess ? const Color(0xFF065F46) : const Color(0xFFB91C1C),
+                    color:
+                        isSuccess
+                            ? const Color(0xFF065F46)
+                            : const Color(0xFFB91C1C),
                     fontSize: 14,
                   ),
                   overflow: TextOverflow.ellipsis,

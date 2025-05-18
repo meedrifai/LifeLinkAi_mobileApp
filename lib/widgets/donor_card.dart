@@ -78,8 +78,9 @@ class DonorCard extends StatelessWidget {
     final DateTime lastDonation = DateTime.parse(donor.lastDonationDate);
     final String formattedLastDonation = dateFormatter.format(lastDonation);
     
+    // ignore: unnecessary_null_comparison
     final String formattedFirstDonation = donor.firstDonationDate != null 
-        ? dateFormatter.format(DateTime.parse(donor.firstDonationDate!))
+        ? dateFormatter.format(DateTime.parse(donor.firstDonationDate))
         : 'N/A';
     
     final int recency = DateTime.now().difference(lastDonation).inDays ~/ 30;
@@ -119,17 +120,16 @@ class DonorCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (donor.cin != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0, left: 26.0),
-                          child: Text(
-                            'CIN: ${donor.cin}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0, left: 26.0),
+                        child: Text(
+                          'CIN: ${donor.cin}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),

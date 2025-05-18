@@ -127,4 +127,21 @@ class ApiService {
       );
     }
   }
+
+  static Future<void> addOrUpdateDonor(Map<String, dynamic> donorData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://backprojectlifelinkai.fly.dev/donors/add-or-update'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(donorData),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print("######## Add Not Succeed ########");
+        throw Exception('Erreur: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de l\'ajout du donneur: $e');
+    }
+  }
 }
