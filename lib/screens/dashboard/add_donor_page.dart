@@ -14,7 +14,7 @@ class AddDonorPage extends StatefulWidget {
 
 class _AddDonorPageState extends State<AddDonorPage> {
   final _formKey = GlobalKey<FormState>();
-  int _currentNavIndex = 1;
+  final int _currentNavIndex = 1;
   bool _isLoading = false;
   String? _notificationMessage;
   bool _isSuccess = true;

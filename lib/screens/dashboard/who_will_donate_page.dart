@@ -607,9 +607,9 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
                     notificationMessage = null;
                   });
                 },
-                child: const Icon(Icons.close, size: 16, color: Colors.grey),
                 borderRadius: BorderRadius.circular(12),
                 customBorder: const CircleBorder(),
+                child: const Icon(Icons.close, size: 16, color: Colors.grey),
               ),
             ],
           ),
