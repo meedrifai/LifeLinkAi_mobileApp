@@ -378,7 +378,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-                                  Container(
+                                  SizedBox(
                                     height: 40,
                                     child: TextField(
                                       onChanged: (value) {

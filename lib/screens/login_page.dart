@@ -728,6 +728,8 @@ class LoadingIndicator extends StatelessWidget {
 
 // Animated Background
 class AnimatedBackground extends StatelessWidget {
+  const AnimatedBackground({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -796,7 +798,7 @@ class PlasmaRenderer extends StatefulWidget {
   final double variation3;
 
   const PlasmaRenderer({
-    Key? key,
+    super.key,
     this.type = PlasmaType.infinity,
     this.particles = 10,
     this.color = Colors.white,
@@ -808,7 +810,7 @@ class PlasmaRenderer extends StatefulWidget {
     this.variation1 = 0.0,
     this.variation2 = 0.0,
     this.variation3 = 0.0,
-  }) : super(key: key);
+  });
 
   @override
   _PlasmaRendererState createState() => _PlasmaRendererState();

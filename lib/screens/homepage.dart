@@ -118,7 +118,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         right: 0,
                         bottom: 45,
                         child: Center(
-                          child: Container(
+                          child: SizedBox(
                             width: 100,
                             child: AnimatedBuilder(
                               animation: _controller,

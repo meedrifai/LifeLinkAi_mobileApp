@@ -210,7 +210,7 @@ class _DonationsPageState extends State<DonationsPage> {
                     return FlexibleSpaceBar(
                       title: isCollapsed 
                         ? Text(
-                            "${widget.user.nomHospital}",
+                            widget.user.nomHospital,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -269,7 +269,7 @@ class _DonationsPageState extends State<DonationsPage> {
                                   ),
                                   SizedBox(height: 20),
                                   Text(
-                                    "${widget.user.nomHospital}",
+                                    widget.user.nomHospital,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
