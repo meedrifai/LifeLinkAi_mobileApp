@@ -15,17 +15,20 @@ class DonationsPage extends StatefulWidget {
 
 class _DonationsPageState extends State<DonationsPage> {
   final TextEditingController _searchController = TextEditingController();
-  final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
   
-  List<Donation> _donations = [];
+  List<Donation> _allDonations = [];
   List<Donation> _filteredDonations = [];
+  List<Donation> _displayedDonations = [];
   bool _isLoading = true;
-  int _currentPage = 1;
-  final int _itemsPerPage = 6;  // Reduced for better UX
-  int _totalPages = 1;
+  bool _isLoadingMore = false;
   int _currentNavIndex = 0;
   String _selectedBloodType = 'All';
   String _sortBy = 'name'; // 'name', 'date', 'frequency'
+  
+  // Infinite scroll settings
+  final int _itemsPerLoad = 10;
+  int _currentLoadedCount = 0;
 
   final List<String> _bloodTypes = ['All', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
   final List<String> _sortOptions = ['name', 'date', 'frequency'];
@@ -34,13 +37,22 @@ class _DonationsPageState extends State<DonationsPage> {
   void initState() {
     super.initState();
     _fetchDonations();
+    _setupScrollListener();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _pageController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        _loadMoreDonations();
+      }
+    });
   }
 
   Future<void> _fetchDonations() async {
@@ -52,7 +64,7 @@ class _DonationsPageState extends State<DonationsPage> {
       final data = await ApiService.fetchDonationsByHospital(widget.user.nomHospital);
       
       setState(() {
-        _donations = data;
+        _allDonations = data;
         _applyFiltersAndSort();
         _isLoading = false;
       });
@@ -70,7 +82,7 @@ class _DonationsPageState extends State<DonationsPage> {
     
     setState(() {
       // Apply search filter
-      List<Donation> filtered = _donations;
+      List<Donation> filtered = _allDonations;
       
       if (query.isNotEmpty) {
         filtered = filtered
@@ -102,37 +114,49 @@ class _DonationsPageState extends State<DonationsPage> {
       }
       
       _filteredDonations = filtered;
-      _totalPages = (_filteredDonations.length / _itemsPerPage).ceil();
-      if (_totalPages == 0) _totalPages = 1;
-      
-      // Reset to first page when filters change
-      _currentPage = 1;
+      _currentLoadedCount = 0;
+      _loadInitialDonations();
     });
   }
 
-  void _goToPage(int page) {
-    if (page >= 1 && page <= _totalPages) {
-      setState(() {
-        _currentPage = page;
-      });
-      _pageController.animateToPage(
-        page - 1,
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+  void _loadInitialDonations() {
+    final initialCount = _itemsPerLoad > _filteredDonations.length 
+        ? _filteredDonations.length 
+        : _itemsPerLoad;
+    
+    _displayedDonations = _filteredDonations.take(initialCount).toList();
+    _currentLoadedCount = initialCount;
   }
 
-  List<Donation> _getCurrentPageDonations() {
-    final startIndex = (_currentPage - 1) * _itemsPerPage;
-    final endIndex = startIndex + _itemsPerPage;
-    
-    if (startIndex >= _filteredDonations.length) return [];
-    
-    return _filteredDonations.sublist(
-      startIndex, 
-      endIndex > _filteredDonations.length ? _filteredDonations.length : endIndex
-    );
+  void _loadMoreDonations() {
+    if (_isLoadingMore || _currentLoadedCount >= _filteredDonations.length) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    // Simulate network delay for better UX
+    Future.delayed(Duration(milliseconds: 500), () {
+      setState(() {
+        final remainingCount = _filteredDonations.length - _currentLoadedCount;
+        final loadCount = _itemsPerLoad > remainingCount ? remainingCount : _itemsPerLoad;
+        
+        final newDonations = _filteredDonations
+            .skip(_currentLoadedCount)
+            .take(loadCount)
+            .toList();
+        
+        _displayedDonations.addAll(newDonations);
+        _currentLoadedCount += loadCount;
+        _isLoadingMore = false;
+      });
+    });
+  }
+
+  Future<void> _refreshDonations() async {
+    await _fetchDonations();
   }
 
   void _showErrorSnackBar(String message) {
@@ -221,7 +245,7 @@ class _DonationsPageState extends State<DonationsPage> {
               
               // Main Content
               Expanded(
-                child: _isLoading ? _buildLoadingState() : _buildContentWithPagination(),
+                child: _isLoading ? _buildLoadingState() : _buildContentWithInfiniteScroll(),
               ),
             ],
           ),
@@ -462,20 +486,20 @@ class _DonationsPageState extends State<DonationsPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Showing ${_getCurrentPageDonations().length} of ${_filteredDonations.length} donors',
+            'Showing ${_displayedDonations.length} of ${_filteredDonations.length} donors',
             style: TextStyle(
               color: Colors.grey[600],
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
           ),
-          if (_totalPages > 1)
+          if (_filteredDonations.length > _displayedDonations.length)
             Text(
-              'Page $_currentPage of $_totalPages',
+              'Scroll to load more',
               style: TextStyle(
                 color: Colors.red[600],
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
         ],
@@ -504,208 +528,125 @@ class _DonationsPageState extends State<DonationsPage> {
     );
   }
 
-  Widget _buildContentWithPagination() {
-    final currentDonations = _getCurrentPageDonations();
-    
-    if (currentDonations.isEmpty) {
+  Widget _buildContentWithInfiniteScroll() {
+    if (_displayedDonations.isEmpty) {
       return _buildEmptyState();
     }
 
-    return Column(
-      children: [
-        // Donor Cards
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (page) {
-              setState(() {
-                _currentPage = page + 1;
-              });
-            },
-            itemCount: _totalPages,
-            itemBuilder: (context, pageIndex) {
-              final startIndex = pageIndex * _itemsPerPage;
-              final endIndex = startIndex + _itemsPerPage;
-              final pageDonations = _filteredDonations.sublist(
-                startIndex,
-                endIndex > _filteredDonations.length ? _filteredDonations.length : endIndex,
-              );
-              
-              return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: pageDonations.map((donor) => 
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 16),
-                      child: _buildModernDonorCard(donor),
-                    )
-                  ).toList(),
-                ),
-              );
-            },
-          ),
-        ),
-        
-        // Pagination Controls
-        if (_totalPages > 1) _buildPaginationControls(),
-      ],
+    return RefreshIndicator(
+      onRefresh: _refreshDonations,
+      color: Colors.red[400],
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _displayedDonations.length + (_isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index < _displayedDonations.length) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: _buildModernDonorCard(_displayedDonations[index]),
+            );
+          } else {
+            // Loading indicator at the bottom
+            return Container(
+              padding: EdgeInsets.all(20),
+              alignment: Alignment.center,
+              child: Column(
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red[400]!),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Loading more donors...',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Container(
-        margin: EdgeInsets.all(20),
-        padding: EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 60,
-              color: Colors.grey[400],
-            ),
-            SizedBox(height: 20),
-            Text(
-              'No donors found',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+    return RefreshIndicator(
+      onRefresh: _refreshDonations,
+      color: Colors.red[400],
+      child: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: Center(
+            child: Container(
+              margin: EdgeInsets.all(20),
+              padding: EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Try adjusting your search criteria or filters',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _searchController.clear();
-                  _selectedBloodType = 'All';
-                  _sortBy = 'name';
-                });
-                _applyFiltersAndSort();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[400],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: Text('Clear Filters'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPaginationControls() {
-    return Container(
-      margin: EdgeInsets.all(20),
-      padding: EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Previous Button
-          IconButton(
-            onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
-            icon: Icon(Icons.chevron_left),
-            style: IconButton.styleFrom(
-              backgroundColor: _currentPage > 1 ? Colors.red[50] : Colors.grey[100],
-              foregroundColor: _currentPage > 1 ? Colors.red[600] : Colors.grey[400],
-            ),
-          ),
-          
-          SizedBox(width: 20),
-          
-          // Page Numbers
-          ...List.generate(
-            _totalPages > 5 ? 5 : _totalPages,
-            (index) {
-              int pageNum;
-              if (_totalPages <= 5) {
-                pageNum = index + 1;
-              } else {
-                if (_currentPage <= 3) {
-                  pageNum = index + 1;
-                } else if (_currentPage > _totalPages - 3) {
-                  pageNum = _totalPages - 4 + index;
-                } else {
-                  pageNum = _currentPage - 2 + index;
-                }
-              }
-              
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: GestureDetector(
-                  onTap: () => _goToPage(pageNum),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: pageNum == _currentPage ? Colors.red[400] : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: pageNum == _currentPage ? null : Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Center(
-                      child: Text(
-                        pageNum.toString(),
-                        style: TextStyle(
-                          color: pageNum == _currentPage ? Colors.white : Colors.grey[600],
-                          fontWeight: pageNum == _currentPage ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 60,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'No donors found',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-          
-          SizedBox(width: 20),
-          
-          // Next Button
-          IconButton(
-            onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
-            icon: Icon(Icons.chevron_right),
-            style: IconButton.styleFrom(
-              backgroundColor: _currentPage < _totalPages ? Colors.red[50] : Colors.grey[100],
-              foregroundColor: _currentPage < _totalPages ? Colors.red[600] : Colors.grey[400],
+                  SizedBox(height: 8),
+                  Text(
+                    'Try adjusting your search criteria or filters',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _searchController.clear();
+                        _selectedBloodType = 'All';
+                        _sortBy = 'name';
+                      });
+                      _applyFiltersAndSort();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: Text('Clear Filters'),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
