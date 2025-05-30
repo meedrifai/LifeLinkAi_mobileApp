@@ -6,7 +6,7 @@ class Donor {
   final String lastDonationDate;
   final String firstDonationDate;
   final int? frequency;
-  final String email;
+  final String email; 
   final String? prediction;
   final String? predictionColor;
   final int? predictionValue;
