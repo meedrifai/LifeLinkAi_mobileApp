@@ -579,7 +579,7 @@ class _DonationsPageState extends State<DonationsPage> {
       color: Colors.red[400],
       child: SingleChildScrollView(
         physics: AlwaysScrollableScrollPhysics(),
-        child: Container(
+        child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.6,
           child: Center(
             child: Container(

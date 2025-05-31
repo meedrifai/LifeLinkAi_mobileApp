@@ -311,38 +311,172 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     );
   }
 
+  // Enhanced sendNotifications method
+  Future<void> sendNotifications(int predictedValue) async {
+    // Get the target donors based on prediction
+    final targets = donorList.where((d) => d.predictionValue == predictedValue).toList();
+    
+    if (targets.isEmpty) {
+      _showNotification(
+        predictedValue == 1 
+          ? "No donors predicted to donate found." 
+          : "No donors predicted not to donate found.", 
+        false
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await _showConfirmationDialog(
+      'Send Notifications',
+      'Send notifications to ${targets.length} donors?',
+    );
+    
+    if (!confirmed) return;
+
+    setState(() {
+      isSending = true;
+    });
+
+    try {
+      print('🚀 Starting notification process for ${targets.length} donors...');
+      
+      // Call the improved API method that returns detailed results
+      final result = await ApiService.sendNotifications(targets);
+      
+      // Parse results
+      final successful = result['successful'] as int;
+      final failed = result['failed'] as int;
+      final invalid = result['invalid'] as int;
+      final total = result['total'] as int;
+
+      // Show appropriate success/error message based on results
+      if (successful == total) {
+        // All notifications sent successfully
+        _showNotification(
+          "🎉 All $successful notifications sent successfully!", 
+          true
+        );
+      } else if (successful > 0) {
+        // Partial success
+        String message = "📊 Mixed results:\n";
+        message += "✅ Successful: $successful\n";
+        if (failed > 0) message += "❌ Failed: $failed\n";
+        if (invalid > 0) message += "⚠️ Invalid emails: $invalid\n";
+        message += "\nCheck console for details.";
+        
+        _showNotification(message, successful > failed);
+      } else {
+        // All failed
+        _showNotification(
+          "❌ All notifications failed to send.\nPlease check your internet connection and try again.", 
+          false
+        );
+      }
+
+      // Log detailed results for debugging
+      if (result['failedEmails'] != null && (result['failedEmails'] as List).isNotEmpty) {
+        print('❌ Failed notifications details:');
+        for (String failure in result['failedEmails'] as List<String>) {
+          print('  - $failure');
+        }
+      }
+
+      if (result['invalidEmails'] != null && (result['invalidEmails'] as List).isNotEmpty) {
+        print('⚠️ Invalid emails details:');
+        for (String invalid in result['invalidEmails'] as List<String>) {
+          print('  - $invalid');
+        }
+      }
+
+    } catch (error) {
+      print('💥 Notification error: $error');
+      
+      String errorMessage = "Failed to send notifications.";
+      
+      // Parse different types of errors for better user feedback
+      String errorStr = error.toString().toLowerCase();
+      if (errorStr.contains('network') || errorStr.contains('connection')) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (errorStr.contains('timeout')) {
+        errorMessage = "Request timeout. The server is taking too long to respond.";
+      } else if (errorStr.contains('server') || errorStr.contains('500')) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (errorStr.contains('all notifications failed')) {
+        errorMessage = "All notifications failed to send. Please check your email configuration.";
+      }
+      
+      _showNotification(errorMessage, false);
+
+    } finally {
+      setState(() {
+        isSending = false;
+      });
+    }
+  }
+
+  // Enhanced confirmation dialog
+  Future<bool> _showConfirmationDialog(String title, String message) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Prevent accidental dismissal
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.email, color: Color(0xFFDC2626), size: 24),
+              const SizedBox(width: 8),
+              Flexible(child: Text(title)),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Send'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  // Enhanced notification display with better styling
   void _showNotification(String message, bool success) {
     setState(() {
       notificationMessage = message;
       isSuccess = success;
     });
 
-    Future.delayed(const Duration(seconds: 5), () {
+    // Auto-dismiss after appropriate time
+    final duration = success ? 4 : 8; // Success messages shorter, error messages longer
+    Future.delayed(Duration(seconds: duration), () {
       if (mounted) {
         setState(() {
           notificationMessage = null;
         });
       }
     });
-  }
-
-  Future<void> sendNotifications(int predictedValue) async {
-    setState(() {
-      isSending = true;
-    });
-
-    final targets = donorList.where((d) => d.predictionValue == predictedValue).toList();
-
-    try {
-      await ApiService.sendNotifications(targets);
-      _showNotification("Notifications sent successfully.", true);
-    } catch (error) {
-      _showNotification("Failed to send notifications.", false);
-    } finally {
-      setState(() {
-        isSending = false;
-      });
-    }
   }
 
   void _handleNavigation(int index) {
@@ -405,6 +539,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
+        overflow: TextOverflow.ellipsis, // Added overflow handling
       ),
       actions: [
         PopupMenuButton<String>(
@@ -452,30 +587,36 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
                   color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 16, top: 80, right: 16, bottom: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.psychology, color: Colors.white, size: 24),
-                        SizedBox(width: 8),
-                        Text(
-                          "Donation Prediction",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+              SafeArea( // Added SafeArea to prevent overflow into status bar
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 60, right: 16, bottom: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min, // Added to prevent overflow
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.psychology, color: Colors.white, size: 24),
+                          SizedBox(width: 8),
+                          Flexible( // Added Flexible to prevent text overflow
+                            child: Text(
+                              "Donation Prediction",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSearchBar(),
-                    const SizedBox(height: 12),
-                    _buildSummaryRow(),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildSearchBar(),
+                      const SizedBox(height: 12),
+                      _buildSummaryRow(),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -500,7 +641,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
           isDense: true,
         ),
         style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -510,44 +651,35 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
 
   Widget _buildSummaryRow() {
     final filteredCount = _getFilteredDonors().length;
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white24,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            'Total: ${donorList.length}',
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-          ),
+    return SingleChildScrollView( // Added to handle horizontal overflow
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildSummaryChip('Total: ${donorList.length}'),
+          const SizedBox(width: 8),
+          _buildSummaryChip('Filtered: $filteredCount'),
+          const SizedBox(width: 8),
+          _buildSummaryChip('Showing: ${displayedDonors.length}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white, 
+          fontSize: 12, 
+          fontWeight: FontWeight.w500
         ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white24,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            'Filtered: $filteredCount',
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white24,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            'Showing: ${displayedDonors.length}',
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -571,12 +703,15 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
               children: [
                 Icon(Icons.psychology, color: Colors.blue, size: 20),
                 SizedBox(width: 6),
-                Text(
-                  'Donor Predictions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
+                Flexible( // Added Flexible to prevent text overflow
+                  child: Text(
+                    'Donor Predictions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -616,30 +751,71 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     );
   }
 
+  // Updated action buttons with better responsive handling
   Widget _buildActionButtons() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 8,
-      children: [
-        _buildActionButton(
-          onPressed: isLoading ? null : handlePredict,
-          icon: Icons.psychology,
-          label: isLoading ? 'Predicting...' : 'Predict',
-          color: Colors.blue,
-        ),
-        _buildActionButton(
-          onPressed: isSending ? null : () => sendNotifications(1),
-          icon: Icons.notifications,
-          label: 'Notify Donors',
-          color: Colors.green,
-        ),
-        _buildActionButton(
-          onPressed: isSending ? null : () => sendNotifications(0),
-          icon: Icons.notifications_off,
-          label: 'Notify Non-Donors',
-          color: Colors.red,
-        ),
-      ],
+    final willDonateCount = donorList.where((d) => d.predictionValue == 1).length;
+    final wontDonateCount = donorList.where((d) => d.predictionValue == 0).length;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use column layout on smaller screens to prevent overflow
+        if (constraints.maxWidth < 600) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildActionButton(
+                onPressed: (isLoading || isSending) ? null : handlePredict,
+                icon: isLoading ? Icons.hourglass_empty : Icons.psychology,
+                label: isLoading ? 'Predicting...' : 'Predict Donations',
+                color: Colors.blue,
+                isFullWidth: true,
+              ),
+              const SizedBox(height: 8),
+              _buildActionButton(
+                onPressed: (isSending || willDonateCount == 0) ? null : () => sendNotifications(1),
+                icon: isSending ? Icons.hourglass_empty : Icons.notifications,
+                label: isSending ? 'Sending...' : 'Notify Will Donate ($willDonateCount)',
+                color: willDonateCount > 0 ? Colors.green : Colors.grey,
+                isFullWidth: true,
+              ),
+              const SizedBox(height: 8),
+              _buildActionButton(
+                onPressed: (isSending || wontDonateCount == 0) ? null : () => sendNotifications(0),
+                icon: isSending ? Icons.hourglass_empty : Icons.notifications_off,
+                label: isSending ? 'Sending...' : 'Notify Won\'t Donate ($wontDonateCount)',
+                color: wontDonateCount > 0 ? Colors.orange : Colors.grey,
+                isFullWidth: true,
+              ),
+            ],
+          );
+        } else {
+          // Use wrap layout on larger screens
+          return Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              _buildActionButton(
+                onPressed: (isLoading || isSending) ? null : handlePredict,
+                icon: isLoading ? Icons.hourglass_empty : Icons.psychology,
+                label: isLoading ? 'Predicting...' : 'Predict Donations',
+                color: Colors.blue,
+              ),
+              _buildActionButton(
+                onPressed: (isSending || willDonateCount == 0) ? null : () => sendNotifications(1),
+                icon: isSending ? Icons.hourglass_empty : Icons.notifications,
+                label: isSending ? 'Sending...' : 'Notify Will Donate ($willDonateCount)',
+                color: willDonateCount > 0 ? Colors.green : Colors.grey,
+              ),
+              _buildActionButton(
+                onPressed: (isSending || wontDonateCount == 0) ? null : () => sendNotifications(0),
+                icon: isSending ? Icons.hourglass_empty : Icons.notifications_off,
+                label: isSending ? 'Sending...' : 'Notify Won\'t Donate ($wontDonateCount)',
+                color: wontDonateCount > 0 ? Colors.orange : Colors.grey,
+              ),
+            ],
+          );
+        }
+      },
     );
   }
 
@@ -648,11 +824,18 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     required IconData icon,
     required String label,
     required Color color,
+    bool isFullWidth = false,
   }) {
-    return ElevatedButton.icon(
+    final button = ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontSize: 14)),
+      label: Flexible( // Added Flexible to prevent text overflow
+        child: Text(
+          label, 
+          style: const TextStyle(fontSize: 14),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
@@ -661,6 +844,8 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
         visualDensity: VisualDensity.compact,
       ),
     );
+
+    return isFullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }
 
   Widget _buildDonorsList() {

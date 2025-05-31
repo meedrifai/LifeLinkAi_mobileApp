@@ -17,7 +17,7 @@ class Donation {
 }
 
 class DonationProvider with ChangeNotifier {
-  List<Donation> _donations = [];
+  final List<Donation> _donations = [];
   bool _isLoading = false;
   String? _error;
 

@@ -1,11 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lifelinkai/services/api_service.dart';
 import 'package:lifelinkai/models/user.dart';
 import 'package:lifelinkai/widgets/login_form.dart';
 import 'package:lifelinkai/widgets/animated_background.dart';
 import 'package:lifelinkai/widgets/login_header.dart';
-import 'package:lifelinkai/widgets/loading_indicator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
