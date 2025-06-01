@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lifelinkai/screens/service_screens.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -177,7 +178,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   margin: const EdgeInsets.symmetric(horizontal: 24),
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/login');
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => ServiceScreensNavigator())
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 18),
