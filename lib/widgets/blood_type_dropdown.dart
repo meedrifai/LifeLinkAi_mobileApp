@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:lifelinkai/utils/constants.dart';
 
-class CustomTextField extends StatefulWidget {
-  final TextEditingController controller;
-  final String labelText;
-  final IconData prefixIcon;
-  final TextInputType keyboardType;
-  final String? Function(String?)? validator;
-  final bool obscureText;
+class BloodTypeDropdown extends StatefulWidget {
+  final String selectedBloodType;
+  final Function(String) onChanged;
 
-  const CustomTextField({
+  const BloodTypeDropdown({
     super.key,
-    required this.controller,
-    required this.labelText,
-    required this.prefixIcon,
-    this.keyboardType = TextInputType.text,
-    this.validator,
-    this.obscureText = false,
+    required this.selectedBloodType,
+    required this.onChanged,
   });
 
   @override
-  State<CustomTextField> createState() => _CustomTextFieldState();
+  State<BloodTypeDropdown> createState() => _BloodTypeDropdownState();
 }
 
-class _CustomTextFieldState extends State<CustomTextField> {
+class _BloodTypeDropdownState extends State<BloodTypeDropdown> {
   bool _isFocused = false;
 
   @override
@@ -48,18 +40,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 ]
               : [],
         ),
-        child: TextFormField(
-          controller: widget.controller,
-          keyboardType: widget.keyboardType,
-          validator: widget.validator,
-          obscureText: widget.obscureText,
-          style: const TextStyle(
-            fontSize: 16,
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
+        child: DropdownButtonFormField<String>(
+          value: widget.selectedBloodType,
           decoration: InputDecoration(
-            labelText: widget.labelText,
+            labelText: 'Blood Type',
             labelStyle: TextStyle(
               color: _isFocused ? AppColors.primaryColor : AppColors.textSecondary,
               fontSize: 14,
@@ -74,7 +58,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                widget.prefixIcon,
+                Icons.water_drop_outlined,
                 color: _isFocused ? AppColors.primaryColor : AppColors.textSecondary,
                 size: 20,
               ),
@@ -100,20 +84,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 width: 2,
               ),
             ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1.5,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 2,
-              ),
-            ),
             filled: true,
             fillColor: _isFocused 
                 ? AppColors.primaryColor.withOpacity(0.05)
@@ -122,11 +92,52 @@ class _CustomTextFieldState extends State<CustomTextField> {
               horizontal: 16,
               vertical: 16,
             ),
-            errorStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
           ),
+          items: AppConstants.bloodTypes.map((String type) {
+            return DropdownMenuItem<String>(
+              value: type,
+              child: Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: AppConstants.bloodTypeColors[type],
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppConstants.bloodTypeColors[type]!.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    type,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              widget.onChanged(newValue);
+            }
+          },
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: _isFocused ? AppColors.primaryColor : AppColors.textSecondary,
+          ),
+          dropdownColor: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          elevation: 8,
         ),
       ),
     );
