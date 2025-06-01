@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lifelinkai/screens/chatbot_screen.dart';
 
 class OptionsScreen extends StatelessWidget {
   const OptionsScreen({Key? key}) : super(key: key);
@@ -62,10 +63,10 @@ class OptionsScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to your chatbot screen
-                        // Navigator.pushNamed(context, '/chatbot');
-                        print("chatbot screen");
-                        // OR use: Navigator.push(context, MaterialPageRoute(builder: (context) => YourChatbotScreen()));
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => const ChatbotScreen())
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE53E3E),
@@ -100,9 +101,7 @@ class OptionsScreen extends StatelessWidget {
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () {
-                        // Navigate to your hospital login screen
                         Navigator.pushNamed(context, '/login');
-                        // OR use: Navigator.push(context, MaterialPageRoute(builder: (context) => YourHospitalLoginScreen()));
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFE53E3E), width: 2),

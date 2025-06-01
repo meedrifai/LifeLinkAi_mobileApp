@@ -296,4 +296,38 @@ class ApiService {
       throw Exception('Erreur lors de l\'ajout du donneur: $e');
     }
   }
+
+
+  static Future<Map<String, dynamic>> sendChatMessage(String message) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/chatboot'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'message': message,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return {
+          'success': true,
+          'intent': data['intent'],
+          'response': data['response'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
 }
