@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lifelinkai/models/chatbot_message.dart';
+import 'package:lifelinkai/widgets/HospitalSelector.dart';
 import '../services/api_service.dart';
-
+import '../services/hospital_data_service.dart';
+import '../models/hospital_data.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({Key? key}) : super(key: key);
@@ -11,10 +13,13 @@ class ChatbotScreen extends StatefulWidget {
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
+  bool isHospitalSelectorActive = false;
+  HospitalData? hospitalData;
   final List<ChatMessage> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
+  bool _isLoadingHospitalData = false;
 
   @override
   void initState() {
@@ -34,6 +39,24 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadHospitalData() async {
+    if (hospitalData != null) return;
+    
+    setState(() {
+      _isLoadingHospitalData = true;
+    });
+
+    try {
+      hospitalData = await HospitalDataService.loadHospitalData();
+    } catch (e) {
+      print('Error loading hospital data: $e');
+    } finally {
+      setState(() {
+        _isLoadingHospitalData = false;
+      });
+    }
   }
 
   void _sendMessage() async {
@@ -59,24 +82,42 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       // Call the API
       final result = await ApiService.sendChatMessage(text);
       
-      String botResponse;
       if (result['success']) {
-        botResponse = result['response'];
+        final intent = result['intent']; // Récupérer l'intent
+        final response = result['response'];
+        
+        // Si l'intent est DonationLocation, activer le sélecteur d'hôpital
+        if (intent == "DonationLocation") {
+          await _loadHospitalData();
+          setState(() {
+            isHospitalSelectorActive = true;
+            _isLoading = false;
+          });
+        } else {
+          // Ajouter la réponse normale du bot
+          setState(() {
+            _messages.add(
+              ChatMessage(
+                text: response,
+                isUser: false,
+                timestamp: DateTime.now(),
+              ),
+            );
+            _isLoading = false;
+          });
+        }
       } else {
-        botResponse = "I'm sorry, I couldn't process your request right now. Please try again later.";
+        setState(() {
+          _messages.add(
+            ChatMessage(
+              text: "I'm sorry, I couldn't process your request right now. Please try again later.",
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+          _isLoading = false;
+        });
       }
-
-      // Add bot response
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            text: botResponse,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-        _isLoading = false;
-      });
     } catch (e) {
       setState(() {
         _messages.add(
@@ -90,6 +131,34 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       });
     }
 
+    _scrollToBottom();
+  }
+
+  void _handleHospitalSelection(List<String> selectedHospitals) {
+    setState(() {
+      isHospitalSelectorActive = false;
+      _messages.add(
+        ChatMessage(
+          text: 'Great! I found these hospitals for you:\n${selectedHospitals.map((h) => '• $h').join('\n')}',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ),
+      );
+    });
+    _scrollToBottom();
+  }
+
+  void _cancelHospitalSelection() {
+    setState(() {
+      isHospitalSelectorActive = false;
+      _messages.add(
+        ChatMessage(
+          text: 'No problem! Feel free to ask me anything else about blood donation.',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ),
+      );
+    });
     _scrollToBottom();
   }
 
@@ -133,8 +202,55 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
+              itemCount: _messages.length + (isHospitalSelectorActive ? 1 : 0),
               itemBuilder: (context, index) {
+                if (isHospitalSelectorActive && index == _messages.length) {
+                  // Afficher le sélecteur d'hôpital
+                  if (_isLoadingHospitalData) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 12),
+                            Text('Loading hospital data...'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  if (hospitalData == null) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red[300]!),
+                      ),
+                      child: const Text(
+                        'Sorry, hospital data is currently unavailable. Please try again later.',
+                        style: TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+                  
+                  return HospitalSelector(
+                    data: hospitalData!,
+                    onFinish: _handleHospitalSelection,
+                    onCancel: _cancelHospitalSelection,
+                  );
+                }
+                
                 final message = _messages[index];
                 return _buildMessageBubble(message);
               },
@@ -231,7 +347,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       maxLines: null,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _sendMessage(),
-                      enabled: !_isLoading,
+                      enabled: !_isLoading && !isHospitalSelectorActive,
                     ),
                   ),
                 ),
@@ -242,7 +358,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    onPressed: _isLoading ? null : _sendMessage,
+                    onPressed: (_isLoading || isHospitalSelectorActive) ? null : _sendMessage,
                     icon: const Icon(
                       Icons.send,
                       color: Colors.white,
@@ -306,8 +422,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE53E3E),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE53E3E),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
