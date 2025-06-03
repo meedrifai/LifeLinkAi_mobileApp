@@ -56,7 +56,7 @@ class CustomAppBar extends StatelessWidget {
             onSelected: (value) {
               if (value == 'logout') {
                 Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/',
+                  '/login',
                   (route) => false,
                 );
               }
