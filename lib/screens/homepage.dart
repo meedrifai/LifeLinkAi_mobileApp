@@ -9,48 +9,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _widthAnimation;
-  late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
     super.initState();
-    
-    // Configuration de l'animation
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    
-    // Animation de la largeur du soulignement
-    _widthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
-    
-    // Animation de la couleur du soulignement
-    _colorAnimation = ColorTween(
-      begin: Colors.redAccent.withOpacity(0.7),
-      end: Colors.redAccent,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
-    
-    // Démarrer l'animation après la construction initiale
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.repeat(reverse: true);
-    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
@@ -121,32 +87,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         child: Center(
                           child: SizedBox(
                             width: 100,
-                            child: AnimatedBuilder(
-                              animation: _controller,
-                              builder: (context, child) {
-                                return Container(
-                                  width: 100,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        _colorAnimation.value!.withOpacity(0.0),
-                                        _colorAnimation.value!,
-                                        _colorAnimation.value!.withOpacity(0.0),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(2),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _colorAnimation.value!.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
                           ),
                         ),
                       ),

@@ -39,7 +39,6 @@ class ApiService {
             );
           }
 
-          // Additional detailed logging to help debug
           print('Parsed user data:');
           print('- ID: "${user.id}"');
           print('- Email: "${user.email}"');
