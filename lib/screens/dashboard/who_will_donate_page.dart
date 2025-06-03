@@ -112,7 +112,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
       searchQuery, 
       selectedFilter
     );
-    
+
     int startIndex = 0;
     int endIndex = (currentPage + 1) * itemsPerPage;
     
@@ -122,7 +122,7 @@ class _WhoWillDonatePageState extends State<WhoWillDonatePage> {
     } else {
       hasMoreData = true;
     }
-
+    
     if (currentPage == 0) {
       displayedDonors = filtered.sublist(startIndex, endIndex);
     } else {

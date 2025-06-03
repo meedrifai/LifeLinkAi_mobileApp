@@ -28,7 +28,7 @@ class BottomNavBar extends StatelessWidget {
           topRight: Radius.circular(20),
         ),
         child: BottomAppBar(
-          color: Color(0xFFD32F2F), // Match the red color from your image
+          color: Color(0xFFD32F2F),
           child: SizedBox(
             height: 60,
             child: Row(

@@ -51,7 +51,7 @@ class _AddDonorPageState extends State<AddDonorPage> {
         );
         break;
       case 1:
-        // Already on this page
+        // Already on add_donor_page
         break;
       case 2:
         Navigator.pushNamed(
